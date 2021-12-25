@@ -71,7 +71,7 @@ func GetQueryResult(c *gin.Context) {
 			} else if "string" == fmt.Sprintf("%T", string(encodedData)) {
 				row[columns[index]] = string(encodedData)
 			} else {
-				fmt.Printf("Failed on if for type %T of %v\n", encodedData, encodedData)
+				fmt.Printf("Failed for type %T of %v\n", encodedData, encodedData)
 			}
 		}
 		result = append(result, row)
