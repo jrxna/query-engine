@@ -4,18 +4,16 @@ import (
 	"database/sql"
 	"fmt"
 	"net/http"
-	"query-engine/model"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var queryResult = model.QueryResult{
-	Name: "query_1",
-	Result: map[string]interface{}{
-		"name": "Joel",
-	},
+type Query struct {
+	Name     string `json:"name" binding:"required,min=1,max=16"`
+	Resource string `json:"resource" binding:"required,min=1,max=16"`
+	Content  string `json:"content" binding:"required,min=1,max=16"`
 }
 
 var queryText = "SELECT * FROM user;"
