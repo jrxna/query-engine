@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"query-engine/controller"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -12,8 +14,5 @@ func CreateRouteMappings() {
 	// Attach middleware for CORS and Auth here
 	// Engine.Use(middleware.Cors())
 
-	// v1 := Engine.Group("/v1")
-	{
-		// v1.POST("/queries/:id", controllers.GetQueryResult)
-	}
+	Engine.POST("/v1/query-result", controller.GetQueryResult)
 }
