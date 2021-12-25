@@ -1,8 +1,6 @@
 package main
 
-import (
-	"query-engine/routes"
-)
+import "query-engine/routes"
 
 func main() {
 	routes.CreateRouteMappings()
