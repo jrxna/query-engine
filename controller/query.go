@@ -12,9 +12,8 @@ import (
 )
 
 type Query struct {
-	Name     string `json:"name" validate:"min=1,max=128,regexp=^[a-zA-Z_][a-zA-Z_0-9]+[a-zA-Z_0-9]$"`
-	Resource string `json:"resource" validate:"min=1,max=256,regexp=^[a-zA-Z_][a-zA-Z_0-9]+[a-zA-Z_0-9]$"`
-	Content  string `json:"content" validate:"min=1,max=10240"`
+	Name      string   `json:"name" validate:"min=1,max=128,regexp=^[a-zA-Z_][a-zA-Z_0-9]+[a-zA-Z_0-9]$"`
+	Variables []string `json:"variables"`
 }
 
 var queryText = "SELECT * FROM user;"
