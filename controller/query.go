@@ -49,6 +49,7 @@ func GetQueryResult(c *gin.Context) {
 		if err != nil {
 			panic(err.Error())
 		}
+		row := make(map[string]interface{})
 		for index, value := range values {
 
 			encodedData := value.([]byte)
@@ -63,20 +64,18 @@ func GetQueryResult(c *gin.Context) {
 			 * string for JSON strings, and
 			 * nil for JSON null.
 			 **/
-			var row map[string]interface{}
 			if next, ok := strconv.ParseFloat(string(encodedData), 64); ok == nil {
 				row[columns[index]] = next
 			} else if booleanValue, ok := strconv.ParseBool(string(encodedData)); ok == nil {
 				row[columns[index]] = booleanValue
 			} else if "string" == fmt.Sprintf("%T", string(encodedData)) {
-				row[columns[index]] = encodedData
+				row[columns[index]] = string(encodedData)
 			} else {
 				fmt.Printf("Failed on if for type %T of %v\n", encodedData, encodedData)
 			}
-
-			result = append(result, row)
-
 		}
+		result = append(result, row)
+
 	}
 
 	c.IndentedJSON(http.StatusOK, result)
