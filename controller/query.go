@@ -8,17 +8,31 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"gopkg.in/validator.v2"
 )
 
 type Query struct {
-	Name     string `json:"name" binding:"required,min=1,max=16"`
-	Resource string `json:"resource" binding:"required,min=1,max=16"`
-	Content  string `json:"content" binding:"required,min=1,max=16"`
+	Name     string `json:"name" validate:"min=1,max=128,regexp=^[a-zA-Z_][a-zA-Z_0-9]+[a-zA-Z_0-9]$"`
+	Resource string `json:"resource" validate:"min=1,max=256,regexp=^[a-zA-Z_][a-zA-Z_0-9]+[a-zA-Z_0-9]$"`
+	Content  string `json:"content" validate:"min=1,max=10240"`
 }
 
 var queryText = "SELECT * FROM user;"
 
-func GetQueryResult(c *gin.Context) {
+func GetQueryResult(ctx *gin.Context) {
+	var query Query
+	if err := ctx.ShouldBindJSON(&query); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+	}
+
+	if err := validator.Validate(query); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+	}
+
 	db, err := sql.Open("mysql", "root@tcp(127.0.0.1:3306)/test")
 	if err != nil {
 		panic(err.Error())
@@ -76,5 +90,5 @@ func GetQueryResult(c *gin.Context) {
 
 	}
 
-	c.IndentedJSON(http.StatusOK, result)
+	ctx.IndentedJSON(http.StatusOK, result)
 }
