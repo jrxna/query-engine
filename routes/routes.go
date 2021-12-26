@@ -4,15 +4,16 @@ import (
 	"query-engine/controller"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var Engine *gin.Engine
 
-func CreateRouteMappings() {
+func CreateRouteMappings(client *mongo.Client) {
 	Engine = gin.Default()
 
-	// Attach middleware for CORS and Auth here
-	// Engine.Use(middleware.Cors())
+	queryController := new(controller.QueryController)
+	queryController.Database = client
 
-	Engine.POST("/v1/query-result", controller.GetQueryResult)
+	Engine.POST("/v1/query-result", queryController.GetQueryResult)
 }
