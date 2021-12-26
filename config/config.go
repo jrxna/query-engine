@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -34,8 +33,6 @@ func Init() {
 	config.SERVICE_PORT = os.Getenv("SERVICE_PORT")
 	config.DATABASE_URL = os.Getenv("DATABASE_URL")
 	config.JWT_SECRET_KEY = os.Getenv("JWT_SECRET_KEY")
-
-	fmt.Println(config)
 }
 
 func GetConfig() Config {
