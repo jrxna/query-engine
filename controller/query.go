@@ -8,30 +8,45 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"go.mongodb.org/mongo-driver/mongo"
 	"gopkg.in/validator.v2"
 )
 
-type Query struct {
-	Name      string   `json:"name" validate:"min=1,max=128,regexp=^[a-zA-Z_][a-zA-Z_0-9]+[a-zA-Z_0-9]$"`
-	Variables []string `json:"variables"`
-	Format    string   `json:"format"`
+type QueryController struct {
+	Database *mongo.Client
+}
+
+type Request struct {
+	Name      string        `json:"name" validate:"min=1,max=128,regexp=^[a-zA-Z_][a-zA-Z_0-9-]+[a-zA-Z_0-9]$"`
+	Variables []interface{} `json:"variables"`
+	Format    string        `json:"format"`
 }
 
 var queryText = "SELECT * FROM user;"
 
-func GetQueryResult(context *gin.Context) {
-	var query Query
-	if error := context.ShouldBindJSON(&query); error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
+func (ht *QueryController) GetQueryResult(ctx *gin.Context) {
+	var request Request
+	if error := ctx.ShouldBindJSON(&request); error != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": error.Error(),
 		})
+		panic(error.Error())
+	}
+	if error := validator.Validate(request); error != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": error.Error(),
+		})
+		panic(error.Error())
+	}
+	if request.Format != "row" && request.Format != "column" && request.Format != "object" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "The format can only be one of the enumeration [row, column, object]",
+		})
+		panic("The format can only be one of enumeration [row, column, object]")
 	}
 
-	if error := validator.Validate(query); error != nil {
-		context.JSON(http.StatusBadRequest, gin.H{
-			"error": error.Error(),
-		})
-	}
+	//queryCollection := ht.Database.Database("hypertool").Collection("queryTemplate")
+	fmt.Println(request.Format)
 
 	db, error := sql.Open("mysql", "root@tcp(127.0.0.1:3306)/test")
 	if error != nil {
@@ -90,5 +105,5 @@ func GetQueryResult(context *gin.Context) {
 
 	}
 
-	context.IndentedJSON(http.StatusOK, result)
+	ctx.IndentedJSON(http.StatusOK, result)
 }
