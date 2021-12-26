@@ -11,6 +11,6 @@ func main() {
 	client, ctx := database.Connect()
 	defer client.Disconnect(ctx)
 
-	routes.CreateRouteMappings()
+	routes.CreateRouteMappings(client)
 	routes.Engine.Run(":8080")
 }
