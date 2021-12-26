@@ -5,6 +5,9 @@
 *.so
 *.dylib
 
+# Build file
+query-engine
+
 # Test binary, built with `go test -c`
 *.test
 

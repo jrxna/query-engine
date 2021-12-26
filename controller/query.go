@@ -14,37 +14,38 @@ import (
 type Query struct {
 	Name      string   `json:"name" validate:"min=1,max=128,regexp=^[a-zA-Z_][a-zA-Z_0-9]+[a-zA-Z_0-9]$"`
 	Variables []string `json:"variables"`
+	Format    string   `json:"format"`
 }
 
 var queryText = "SELECT * FROM user;"
 
-func GetQueryResult(ctx *gin.Context) {
+func GetQueryResult(context *gin.Context) {
 	var query Query
-	if err := ctx.ShouldBindJSON(&query); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+	if error := context.ShouldBindJSON(&query); error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": error.Error(),
 		})
 	}
 
-	if err := validator.Validate(query); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+	if error := validator.Validate(query); error != nil {
+		context.JSON(http.StatusBadRequest, gin.H{
+			"error": error.Error(),
 		})
 	}
 
-	db, err := sql.Open("mysql", "root@tcp(127.0.0.1:3306)/test")
-	if err != nil {
-		panic(err.Error())
+	db, error := sql.Open("mysql", "root@tcp(127.0.0.1:3306)/test")
+	if error != nil {
+		panic(error.Error())
 	}
 	defer db.Close()
 
-	rows, err := db.Query(queryText)
-	if err != nil {
-		panic(err.Error())
+	rows, error := db.Query(queryText)
+	if error != nil {
+		panic(error.Error())
 	}
-	columns, err := rows.Columns()
-	if err != nil {
-		panic(err.Error())
+	columns, error := rows.Columns()
+	if error != nil {
+		panic(error.Error())
 	}
 	count := len(columns)
 	values := make([]interface{}, count)
@@ -56,9 +57,9 @@ func GetQueryResult(ctx *gin.Context) {
 	var result []interface{}
 
 	for rows.Next() {
-		err := rows.Scan(scanArgs...)
-		if err != nil {
-			panic(err.Error())
+		error := rows.Scan(scanArgs...)
+		if error != nil {
+			panic(error.Error())
 		}
 		row := make(map[string]interface{})
 		for index, value := range values {
@@ -89,5 +90,5 @@ func GetQueryResult(ctx *gin.Context) {
 
 	}
 
-	ctx.IndentedJSON(http.StatusOK, result)
+	context.IndentedJSON(http.StatusOK, result)
 }
