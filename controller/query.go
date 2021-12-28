@@ -42,21 +42,29 @@ func objectFormatter(values []interface{}, columns []string) map[string]interfac
 	return row
 }
 
-func columnFormatter(values []interface{}, columns []string) map[string][]interface{} {
-	row := make(map[string][]interface{})
-	for index, value := range values {
-		encodedData := value.([]byte)
-		if next, ok := strconv.ParseFloat(string(encodedData), 64); ok == nil {
-			row[columns[index]] = append(row[columns[index]], next)
-		} else if booleanValue, ok := strconv.ParseBool(string(encodedData)); ok == nil {
-			row[columns[index]] = append(row[columns[index]], booleanValue)
-		} else if "string" == fmt.Sprintf("%T", string(encodedData)) {
-			row[columns[index]] = append(row[columns[index]], string(encodedData))
-		} else {
-			fmt.Printf("Failed for type %T of %v\n", encodedData, encodedData)
+func columnFormatter(rows *sqlx.Rows, values []interface{}, columns []string, scanArgs []interface{}) map[string][]interface{} {
+	result := make(map[string][]interface{})
+	for rows.Next() {
+		error := rows.Scan(scanArgs...)
+		if error != nil {
+			panic(error.Error())
+			// TODO: Pass context here
+		}
+		for index, value := range values {
+			encodedData := value.([]byte)
+			if next, ok := strconv.ParseFloat(string(encodedData), 64); ok == nil {
+				result[columns[index]] = append(result[columns[index]], next)
+			} else if booleanValue, ok := strconv.ParseBool(string(encodedData)); ok == nil {
+				result[columns[index]] = append(result[columns[index]], booleanValue)
+			} else if "string" == fmt.Sprintf("%T", string(encodedData)) {
+				result[columns[index]] = append(result[columns[index]], string(encodedData))
+			} else {
+				fmt.Printf("Failed for type %T of %v\n", encodedData, encodedData)
+			}
 		}
 	}
-	return row
+
+	return result
 }
 
 func rowFormatter(values []interface{}, columns []string) []interface{} {
@@ -128,13 +136,10 @@ func (ht *QueryController) GetQueryResult(ctx *gin.Context) {
 			panic(err.Error())
 		}
 		defer db.Close()
-		log.Println("Connected to the database successfully...")
 
-		log.Println("Executing query...")
-		//variables := []interface{}{6, "XFS", 80}
-		rows, err := db.Queryx("SELECT * from user")
+		rows, err := db.Queryx(fmt.Sprint(query["content"]), request.Variables...)
 		if err != nil {
-			ctx.IndentedJSON(http.StatusAccepted, gin.H{
+			ctx.IndentedJSON(http.StatusBadGateway, gin.H{
 				"error": err.Error(),
 			})
 			panic(err.Error())
@@ -142,7 +147,7 @@ func (ht *QueryController) GetQueryResult(ctx *gin.Context) {
 
 		columns, err := rows.Columns()
 		if err != nil {
-			ctx.IndentedJSON(http.StatusAccepted, gin.H{
+			ctx.IndentedJSON(http.StatusBadGateway, gin.H{
 				"error": err.Error(),
 			})
 			panic(err.Error())
@@ -161,28 +166,35 @@ func (ht *QueryController) GetQueryResult(ctx *gin.Context) {
 			scanArgs[i] = &values[i]
 		}
 
-		var result []interface{}
-
-		for rows.Next() {
-			error := rows.Scan(scanArgs...)
-			if error != nil {
-				panic(error.Error())
+		/* If the requested format is column, result will be of type map[string][]interface{}. In all other cases,
+		 * result will be an array of interfaces. These interfaces could be maps of rows or just arrays of rows.
+		 * Since result of the type map[string][]interface{} needs to be populated in a slightly different manner,
+		 * it has been separated by the following if-else block from the other two types of formats.
+		 */
+		if request.Format == "column" {
+			var result map[string][]interface{}
+			result = columnFormatter(rows, values, columns, scanArgs)
+			ctx.IndentedJSON(http.StatusAccepted, gin.H{
+				"success": true,
+				"result":  result,
+			})
+		} else {
+			var result []interface{}
+			for rows.Next() {
+				error := rows.Scan(scanArgs...)
+				if error != nil {
+					panic(error.Error())
+				}
+				if request.Format == "object" {
+					result = append(result, objectFormatter(values, columns))
+				} else if request.Format == "row" {
+					result = append(result, rowFormatter(values, columns))
+				}
 			}
-
-			if request.Format == "object" {
-				result = append(result, objectFormatter(values, columns))
-			} else if request.Format == "column" {
-				result = append(result, columnFormatter(values, columns))
-			} else if request.Format == "row" {
-				result = append(result, rowFormatter(values, columns))
-			}
-
+			ctx.IndentedJSON(http.StatusAccepted, gin.H{
+				"success": true,
+				"result":  result,
+			})
 		}
-
-		ctx.IndentedJSON(http.StatusAccepted, gin.H{
-			"success": true,
-			"result":  result,
-		})
 	}
-
 }
