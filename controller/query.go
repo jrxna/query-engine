@@ -28,13 +28,13 @@ type Request struct {
 func objectFormatter(values []interface{}, columns []string) map[string]interface{} {
 	row := make(map[string]interface{})
 	for index, value := range values {
-		encodedData := value.([]byte)
-		if next, ok := strconv.ParseFloat(string(encodedData), 64); ok == nil {
+		encodedData := fmt.Sprint(value)
+		if next, ok := strconv.ParseFloat(encodedData, 64); ok == nil {
 			row[columns[index]] = next
-		} else if booleanValue, ok := strconv.ParseBool(string(encodedData)); ok == nil {
+		} else if booleanValue, ok := strconv.ParseBool(encodedData); ok == nil {
 			row[columns[index]] = booleanValue
-		} else if "string" == fmt.Sprintf("%T", string(encodedData)) {
-			row[columns[index]] = string(encodedData)
+		} else if "string" == fmt.Sprintf("%T", encodedData) {
+			row[columns[index]] = string(value.([]byte))
 		} else {
 			fmt.Printf("Failed for type %T of %v\n", encodedData, encodedData)
 		}
@@ -51,13 +51,13 @@ func columnFormatter(rows *sqlx.Rows, values []interface{}, columns []string, sc
 			// TODO: Pass context here
 		}
 		for index, value := range values {
-			encodedData := value.([]byte)
-			if next, ok := strconv.ParseFloat(string(encodedData), 64); ok == nil {
+			encodedData := fmt.Sprint(value)
+			if next, ok := strconv.ParseFloat(encodedData, 64); ok == nil {
 				result[columns[index]] = append(result[columns[index]], next)
-			} else if booleanValue, ok := strconv.ParseBool(string(encodedData)); ok == nil {
+			} else if booleanValue, ok := strconv.ParseBool(encodedData); ok == nil {
 				result[columns[index]] = append(result[columns[index]], booleanValue)
-			} else if "string" == fmt.Sprintf("%T", string(encodedData)) {
-				result[columns[index]] = append(result[columns[index]], string(encodedData))
+			} else if "string" == fmt.Sprintf("%T", encodedData) {
+				result[columns[index]] = append(result[columns[index]], string(value.([]byte)))
 			} else {
 				fmt.Printf("Failed for type %T of %v\n", encodedData, encodedData)
 			}
@@ -70,13 +70,13 @@ func columnFormatter(rows *sqlx.Rows, values []interface{}, columns []string, sc
 func rowFormatter(values []interface{}, columns []string) []interface{} {
 	row := make([]interface{}, 0)
 	for _, value := range values {
-		encodedData := value.([]byte)
-		if next, ok := strconv.ParseFloat(string(encodedData), 64); ok == nil {
+		encodedData := fmt.Sprint(value)
+		if next, ok := strconv.ParseFloat(encodedData, 64); ok == nil {
 			row = append(row, next)
-		} else if booleanValue, ok := strconv.ParseBool(string(encodedData)); ok == nil {
+		} else if booleanValue, ok := strconv.ParseBool(encodedData); ok == nil {
 			row = append(row, booleanValue)
-		} else if "string" == fmt.Sprintf("%T", string(encodedData)) {
-			row = append(row, string(encodedData))
+		} else if "string" == fmt.Sprintf("%T", encodedData) {
+			row = append(row, string(value.([]byte)))
 		} else {
 			fmt.Printf("Failed for type %T of %v\n", encodedData, encodedData)
 		}
@@ -125,7 +125,7 @@ func (ht *QueryController) GetQueryResult(ctx *gin.Context) {
 
 		cfg := mysql.Config{
 			User:   fmt.Sprint(mysqlConfig["databaseUserName"]),
-			Passwd: "",
+			Passwd: fmt.Sprint(mysqlConfig["databasePassword"]),
 			Net:    "tcp",
 			Addr:   fmt.Sprint(mysqlConfig["host"]) + ":" + fmt.Sprint(mysqlConfig["port"]),
 			DBName: fmt.Sprint(mysqlConfig["databaseName"]),
