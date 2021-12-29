@@ -86,7 +86,6 @@ func rowFormatter(values []interface{}, columns []string) []interface{} {
 
 func (ht *QueryController) GetQueryResult(ctx *gin.Context) {
 	var request Request
-	//var query model.Query
 	if error := ctx.ShouldBindJSON(&request); error != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": error.Error(),
@@ -133,13 +132,16 @@ func (ht *QueryController) GetQueryResult(ctx *gin.Context) {
 
 		db, err := sqlx.Connect("mysql", cfg.FormatDSN())
 		if err != nil {
+			ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
 			panic(err.Error())
 		}
 		defer db.Close()
 
 		rows, err := db.Queryx(fmt.Sprint(query["content"]), request.Variables...)
 		if err != nil {
-			ctx.IndentedJSON(http.StatusBadGateway, gin.H{
+			ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			panic(err.Error())
@@ -147,7 +149,7 @@ func (ht *QueryController) GetQueryResult(ctx *gin.Context) {
 
 		columns, err := rows.Columns()
 		if err != nil {
-			ctx.IndentedJSON(http.StatusBadGateway, gin.H{
+			ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			panic(err.Error())
