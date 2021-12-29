@@ -20,9 +20,9 @@ type QueryController struct {
 }
 
 type Request struct {
-	Name      string        `json:"name" validate:"min=1,max=128,regexp=^[a-zA-Z_][a-zA-Z_0-9-]+[a-zA-Z_0-9]$"`
-	Variables []interface{} `json:"variables"`
-	Format    string        `json:"format"`
+	Name      string      `json:"name" validate:"min=1,max=128,regexp=^[a-zA-Z_][a-zA-Z_0-9-]+[a-zA-Z_0-9]$"`
+	Variables interface{} `json:"variables"`
+	Format    string      `json:"format"`
 }
 
 func objectFormatter(values []interface{}, columns []string) map[string]interface{} {
@@ -139,7 +139,14 @@ func (ht *QueryController) GetQueryResult(ctx *gin.Context) {
 		}
 		defer db.Close()
 
-		rows, err := db.Queryx(fmt.Sprint(query["content"]), request.Variables...)
+		var rows *sqlx.Rows
+
+		if "[]interface {}" == fmt.Sprintf("%T", request.Variables) {
+			rows, err = db.Queryx(fmt.Sprint(query["content"]), request.Variables.([]interface{})...)
+		} else if "map[string]interface {}" == fmt.Sprintf("%T", request.Variables) {
+			rows, err = db.NamedQuery(fmt.Sprint(query["content"]), request.Variables)
+		}
+
 		if err != nil {
 			ctx.IndentedJSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
